@@ -139,14 +139,24 @@ class CommerceService:
         ranked = sorted(products, key=lambda item: (item["price_cents"], -item["rating"]))
         cheapest = ranked[0]
         best_rated = max(products, key=lambda item: (item["rating"], -item["price_cents"]))
+        others = [item for item in products if item["sku"] != cheapest["sku"]]
+        if cheapest["sku"] == best_rated["sku"] and others:
+            other = others[0]
+            message = (
+                f"{cheapest['name']} is the lower price at {cheapest['price']} "
+                f"and the higher rating at {cheapest['rating']}. "
+                f"{other['name']} is {other['price']}."
+            )
+        else:
+            message = (
+                f"{cheapest['name']} is the lower price at {cheapest['price']}. "
+                f"{best_rated['name']} has the higher rating at {best_rated['rating']}."
+            )
         payload = {
             "products": products,
             "cheapest_sku": cheapest["sku"],
             "recommended_sku": best_rated["sku"],
-            "message": (
-                f"{cheapest['name']} is the lower price at {cheapest['price']}. "
-                f"{best_rated['name']} has the higher rating at {best_rated['rating']}."
-            ),
+            "message": message,
         }
         await self._tool_event(actor, "succeeded", {"skus": skus}, {"cheapest_sku": cheapest["sku"]})
         return payload

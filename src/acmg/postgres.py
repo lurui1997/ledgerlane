@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from datetime import datetime
 from importlib.resources import files
 from typing import Any
 
 import asyncpg
+
+logger = logging.getLogger("ledgerlane.postgres")
 
 from acmg.catalog import PRODUCTS
 from acmg.store import IdempotencyConflict, InsufficientStock, StoreError, jsonable, new_id, utcnow
@@ -35,14 +38,18 @@ class PostgresStore:
     @classmethod
     async def connect(cls, database_url: str) -> "PostgresStore":
         last_error: Exception | None = None
-        for _ in range(30):
+        for attempt in range(1, 21):
             try:
-                pool = await asyncpg.create_pool(database_url, min_size=1, max_size=5)
+                pool = await asyncio.wait_for(
+                    asyncpg.create_pool(database_url, min_size=1, max_size=5),
+                    timeout=5,
+                )
                 store = cls(pool)
                 await store._migrate()
                 return store
             except Exception as exc:  # noqa: BLE001 - startup retry until Postgres is ready
                 last_error = exc
+                logger.warning("postgres not ready (attempt %s): %s", attempt, exc)
                 await asyncio.sleep(1)
         raise RuntimeError(f"Could not connect to Postgres: {last_error}")
 
