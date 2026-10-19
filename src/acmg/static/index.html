@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ledgerlane — Alexa+ commerce simulation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,520;9..144,640&family=Outfit:wght@380;520;640&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <div>
+        <p class="eyebrow">Alexa+ track · web simulation</p>
+        <h1>Ledgerlane</h1>
+      </div>
+    </div>
+    <div class="pills" id="pills" aria-label="Runtime mode">
+      <span class="pill">Starting</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="conversation" aria-label="Conversation">
+      <div id="thread" class="thread">
+        <article class="bubble concierge">
+          <p class="who">Ledgerlane</p>
+          <p>Ask for something you can actually buy. I search a small catalog, read the total back, and only charge the mock card after you say yes. If the capture fails, the ledger shows the undo.</p>
+        </article>
+      </div>
+      <div class="chips" id="chips"></div>
+      <form id="composer">
+        <label class="sr" for="message">Message</label>
+        <input id="message" name="message" autocomplete="off" placeholder="Find trail running shoes under 120 dollars" />
+        <button type="submit">Send</button>
+      </form>
+      <div class="plays">
+        <button type="button" id="play-happy" class="ghost">Play a full order</button>
+        <button type="button" id="play-fail" class="ghost">Play a failed capture</button>
+      </div>
+      <p id="error" class="error" hidden></p>
+    </section>
+
+    <aside class="ledger" aria-label="Action ledger">
+      <header>
+        <h2>Action ledger</h2>
+        <p>Who did what, and why. Written before the reply is spoken.</p>
+      </header>
+      <ol id="ledger"></ol>
+    </aside>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

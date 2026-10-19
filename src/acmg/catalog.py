@@ -1,0 +1,148 @@
+"""Fictional catalog. No marketplace brands, so the demo video stays clear of trademarks."""
+
+from typing import Any
+
+PRODUCTS: list[dict[str, Any]] = [
+    {
+        "sku": "NL-RIDGE-7",
+        "name": "Northline Ridge Runner",
+        "brand": "Northline",
+        "category": "footwear",
+        "description": "Light trail running shoe with a rock plate and a 7 mm drop.",
+        "price_cents": 9800,
+        "currency": "USD",
+        "stock": 8,
+        "rating": 4.7,
+        "attributes": {"size_range": "7-13", "drop_mm": 7, "weight_g": 280},
+        "synonyms": "trail running shoes sneakers runners trainers",
+    },
+    {
+        "sku": "NL-RIDGE-W",
+        "name": "Northline Ridge Runner Wide",
+        "brand": "Northline",
+        "category": "footwear",
+        "description": "Same trail shoe on a wider last, for shoppers who need more toe room.",
+        "price_cents": 10800,
+        "currency": "USD",
+        "stock": 5,
+        "rating": 4.6,
+        "attributes": {"size_range": "7-13", "width": "wide", "drop_mm": 7},
+        "synonyms": "trail running shoes wide sneakers runners",
+    },
+    {
+        "sku": "NL-SUMMIT",
+        "name": "Northline Summit Boot",
+        "brand": "Northline",
+        "category": "footwear",
+        "description": "Waterproof leather boot for cold trails. Heavier than the Ridge Runner.",
+        "price_cents": 18600,
+        "currency": "USD",
+        "stock": 3,
+        "rating": 4.4,
+        "attributes": {"size_range": "7-13", "waterproof": True},
+        "synonyms": "hiking boots trail boots shoes",
+    },
+    {
+        "sku": "KD-SOCK-2",
+        "name": "Kindling Merino Socks",
+        "brand": "Kindling",
+        "category": "apparel",
+        "description": "Two-pack of merino running socks.",
+        "price_cents": 2400,
+        "currency": "USD",
+        "stock": 20,
+        "rating": 4.8,
+        "attributes": {"material": "merino", "pack": 2},
+        "synonyms": "socks wool running socks",
+    },
+    {
+        "sku": "HK-BEANIE",
+        "name": "Harborknit Watch Cap",
+        "brand": "Harborknit",
+        "category": "apparel",
+        "description": "Wool watch cap that packs into a jacket pocket.",
+        "price_cents": 3200,
+        "currency": "USD",
+        "stock": 12,
+        "rating": 4.5,
+        "attributes": {"material": "wool"},
+        "synonyms": "beanie hat cap",
+    },
+    {
+        "sku": "LM-ARC",
+        "name": "Lumen Arc Desk Lamp",
+        "brand": "Lumen",
+        "category": "home",
+        "description": "Brass desk lamp with a warm dimmer and a heavy round base.",
+        "price_cents": 14000,
+        "currency": "USD",
+        "stock": 4,
+        "rating": 4.6,
+        "attributes": {"material": "brass", "bulb": "E26"},
+        "synonyms": "desk lamp light lamp",
+    },
+    {
+        "sku": "CK-POUR",
+        "name": "Copperkettle Pour-Over",
+        "brand": "Copperkettle",
+        "category": "kitchen",
+        "description": "Hand-thrown ceramic dripper. The matching kettle is sold out.",
+        "price_cents": 5400,
+        "currency": "USD",
+        "stock": 6,
+        "rating": 4.3,
+        "attributes": {"material": "ceramic"},
+        "synonyms": "coffee dripper pour over",
+    },
+    {
+        "sku": "CK-KETTLE",
+        "name": "Copperkettle Stovetop Kettle",
+        "brand": "Copperkettle",
+        "category": "kitchen",
+        "description": "Gooseneck kettle. Currently out of stock.",
+        "price_cents": 8900,
+        "currency": "USD",
+        "stock": 0,
+        "rating": 4.9,
+        "attributes": {"material": "stainless"},
+        "synonyms": "kettle gooseneck coffee",
+    },
+    {
+        "sku": "MC-MUG",
+        "name": "Moss and Clay Mug Set",
+        "brand": "Moss and Clay",
+        "category": "kitchen",
+        "description": "Set of two speckled mugs.",
+        "price_cents": 4200,
+        "currency": "USD",
+        "stock": 9,
+        "rating": 4.4,
+        "attributes": {"pieces": 2},
+        "synonyms": "mugs cups ceramic",
+    },
+    {
+        "sku": "SB-DUFFEL",
+        "name": "Sable Weekend Duffel",
+        "brand": "Sable",
+        "category": "accessories",
+        "description": "Waxed canvas duffel with a shoe compartment.",
+        "price_cents": 16000,
+        "currency": "USD",
+        "stock": 3,
+        "rating": 4.5,
+        "attributes": {"liters": 35},
+        "synonyms": "bag duffel weekend bag",
+    },
+]
+
+FREE_SHIPPING_OVER_CENTS = 7500
+SHIPPING_CENTS = 600
+QUOTE_TTL_MINUTES = 15
+
+
+def shipping_cents(subtotal_cents: int) -> int:
+    if subtotal_cents <= 0:
+        return 0
+    if subtotal_cents >= FREE_SHIPPING_OVER_CENTS:
+        return 0
+    return SHIPPING_CENTS

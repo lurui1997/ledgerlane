@@ -1,0 +1,11 @@
+.venv
+.git
+.pytest_cache
+__pycache__
+uploads
+agent-tools
+tests
+docs
+*.md
+!README.md
+.env

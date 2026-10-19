@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: acmg
+      POSTGRES_PASSWORD: acmg
+      POSTGRES_DB: acmg
+    ports:
+      - "54329:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U acmg -d acmg"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - ledgerlane-pg:/var/lib/postgresql/data
+
+  gateway:
+    build: .
+    ports:
+      - "4317:4317"
+    environment:
+      DATABASE_URL: postgresql://acmg:acmg@postgres:5432/acmg
+      ACMG_AUTH_MODE: demo
+      ACMG_DEMO_TOKEN: demo-shopper-token
+      LLM_PROVIDER: mock
+      PAYMENT_PROVIDER: mock
+      PUBLIC_BASE_URL: http://localhost:4317
+      MCP_INTERNAL_URL: http://127.0.0.1:4317/mcp
+      ACMG_ALLOWED_HOSTS: "localhost,localhost:*,127.0.0.1,127.0.0.1:*,[::1],[::1]:*"
+      ACMG_ALLOWED_ORIGINS: "http://localhost:*,http://127.0.0.1:*,http://[::1]:*"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  ledgerlane-pg:
