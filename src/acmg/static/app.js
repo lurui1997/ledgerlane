@@ -137,8 +137,10 @@ function renderCards(article, trace) {
     if (result.order_id && result.status) {
       cards.append(receipt(`Order ${result.order_id}`, `${result.status} · ${result.total || ""} ${result.tracking_number || ""}`.trim()));
     }
-    if (result.cart_id && result.items) {
-      cards.append(receipt("Cart", result.items.map((item) => `${item.qty} × ${item.name}`).join(", ") + ` · ${result.subtotal}`));
+    if (result.cart_id && result.items && !result.quote_id && !result.order_id) {
+      const total = result.subtotal || result.total || "";
+      const lines = result.items.map((item) => `${item.qty} × ${item.name}`).join(", ");
+      cards.append(receipt("Cart", total ? `${lines} · ${total}` : lines));
     }
   });
   if (cards.childElementCount) article.append(cards);
@@ -178,6 +180,7 @@ function renderLedger(events) {
       <p class="why">${escapeHtml(event.actor_type || "system")} · ${escapeHtml(event.actor_id || "")}${event.reason ? " — " + escapeHtml(event.reason) : ""}</p>`;
     ledger.append(item);
   });
+  ledger.scrollTop = ledger.scrollHeight;
 }
 
 function escapeHtml(value) {

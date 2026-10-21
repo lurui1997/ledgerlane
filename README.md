@@ -1,5 +1,9 @@
 # Ledgerlane
 
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-2025--11--25-1c1712)](docs/ARCHITECTURE.md)
+[![Payments](https://img.shields.io/badge/payments-mock%20%7C%20PayPal%20seam-0e6b52)](src/acmg/payments.py)
+
 Ledgerlane is an open-source **agentic commerce MCP gateway**. An assistant can search a catalog, compare options, build a cart, place an order, track it, and refund it. The part that matters is behind the tools: multi-step checkout with saga-style compensation, idempotency so a retry cannot capture a card twice, and a Postgres audit log of who did what, and why.
 
 The web page is a simulation of an Alexa+ conversation. [Amazon's hackathon rules](https://amazonappdev2026.devpost.com/rules) allow that simulation when you do not have a device. The simulator does not fake the tools. It opens an MCP client and calls this server over Streamable HTTP, protocol revision **2025-11-25**.
@@ -16,6 +20,14 @@ A shopping agent that only wraps a product API can recommend a shoe. It cannot h
 - a person can replay the turn later: which agent, which tool, which reason
 
 Ledgerlane is that layer. Alexa+ (or the simulator standing in for it) is the caller. A PayPal sandbox adapter can replace the mock card later without rewriting the saga.
+
+![Confirmed order in the Ledgerlane simulator](docs/images/simulator-order.png)
+
+Checkout prices the cart first. The order appears only after an explicit yes. The ledger on the right is the saga behind that reply.
+
+![A capture that fails, then rolls back](docs/images/simulator-rollback.png)
+
+The same checkout with a capture that fails on purpose. The order is cancelled. The ledger lists the failure, then the compensating steps.
 
 ## Architecture
 
@@ -55,15 +67,23 @@ Alexa+ certification also wants a public HTTPS URL, a bare HTTP 401 (no `WWW-Aut
 
 ## Run the demo
 
-Docker Compose is the path to show a judge. It starts Postgres and the gateway in mock mode.
+From a fresh clone. The intended public repository is [github.com/lurui1997/ledgerlane](https://github.com/lurui1997/ledgerlane). Create that repository before the link resolves. This tree has not been published for you.
 
 ```bash
+git clone https://github.com/lurui1997/ledgerlane.git
+cd ledgerlane
 docker compose up --build
 ```
 
+Docker Compose starts Postgres and the gateway in mock mode. No model key and no payment key.
+
 Open [http://localhost:4317](http://localhost:4317).
 
-Click **Play a full order** (search, compare, cart, checkout, place, track). Then **Play a failed capture**. The reply says the checkout was rolled back. The ledger lists `capture_payment.failed` and the compensating steps.
+Click **Play a full order** (search, compare, cart, checkout, place, track). Then **Play a failed capture**. The reply says the checkout was rolled back. The ledger lists `saga.capture_payment.failed` and the compensating steps.
+
+Replay the same rows outside the chat at `/audit?session_id=...`. The page reads `GET /api/audit`. The simulator keeps the session id in the browser.
+
+![Audit replay for a rolled-back checkout](docs/images/audit-replay.png)
 
 Stop with Ctrl-C. Add `-d` if you want it in the background, and `docker compose down` to stop it.
 
@@ -145,7 +165,7 @@ If you set `LLM_PROVIDER=gemini` and leave `GEMINI_API_KEY` empty, startup of a 
 
 The Amazon "Build, Ship, Shape" submission window opened on August 31, 2026. This project was created on October 19, 2026, inside that window. There was no earlier private version. The work in the window is the whole gateway: MCP tools, saga runner, idempotency, Postgres audit log, mock payments, the PayPal provider interface, the web simulator, tests, and the docs under `docs/`.
 
-Devpost field draft: [docs/devpost-submission.md](docs/devpost-submission.md). Shot list for the video: [docs/demo-video-script.md](docs/demo-video-script.md).
+Devpost field draft: [docs/devpost-submission.md](docs/devpost-submission.md). The finished demo cut, and the shot list that matches it: [docs/demo-video-script.md](docs/demo-video-script.md). Release notes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Project layout
 

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ledgerlane — audit replay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560&family=Outfit:wght@380;520;640&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <style>
+    body { min-height: 100vh; height: 100vh; overflow: hidden; }
+    .replay { padding: 8px 4vw 22px; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .replay h1 { font-size: 36px; }
+    .lead { margin: 8px 0 14px; color: var(--muted); max-width: 52rem; }
+    .table-wrap {
+      flex: 1; min-height: 0; overflow: auto;
+      background: var(--paper-2); border: 1px solid var(--line); border-radius: 18px;
+    }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { text-align: left; padding: 10px 12px; vertical-align: top; border-top: 1px solid var(--line); font-size: 14px; overflow-wrap: anywhere; }
+    th { border-top: 0; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); position: sticky; top: 0; background: #faf6ee; }
+    td.action { font-weight: 520; }
+    .state { color: var(--muted); padding: 18px 0; }
+    col.when { width: 18%; }
+    col.action { width: 24%; }
+    col.status { width: 12%; }
+    col.actor { width: 20%; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <div>
+        <p class="eyebrow">Audit log · replay</p>
+        <h1>Who did what, and why</h1>
+      </div>
+    </div>
+  </header>
+  <main class="replay">
+    <p class="lead" id="lead">Reading the Postgres audit log for this session. Nothing here is inferred from the chat.</p>
+    <p class="state" id="state">Loading the audit log…</p>
+    <div class="table-wrap">
+    <table id="table" hidden>
+      <colgroup>
+        <col class="when" /><col class="action" /><col class="status" /><col class="actor" /><col />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Action</th>
+          <th>Status</th>
+          <th>Actor</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    </div>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const sessionId = params.get("session_id") || "";
+    const state = document.querySelector("#state");
+    const table = document.querySelector("#table");
+    const rows = document.querySelector("#rows");
+    const lead = document.querySelector("#lead");
+
+    if (!sessionId) {
+      state.textContent = "Add a session_id query parameter. The simulator stores one in this browser after a turn.";
+    } else {
+      lead.textContent = "GET /api/audit?session_id=" + sessionId + ". Rows are the stored events, oldest first.";
+      load();
+    }
+
+    async function load() {
+      try {
+        const response = await fetch("/api/audit?session_id=" + encodeURIComponent(sessionId));
+        if (!response.ok) throw new Error("The audit log did not respond.");
+        const body = await response.json();
+        const events = body.events || [];
+        if (!events.length) {
+          state.textContent = "No events for that session yet.";
+          return;
+        }
+        state.hidden = true;
+        table.hidden = false;
+        document.querySelector(".table-wrap").hidden = false;
+        events.forEach((event) => {
+          const tr = document.createElement("tr");
+          const when = (event.created_at || "").replace("T", " ").replace("+00:00", "Z").slice(5, 20);
+          tr.innerHTML = `
+            <td>${escapeHtml(when)}</td>
+            <td class="action">${escapeHtml(event.action)}</td>
+            <td><span class="status ${escapeHtml(event.status)}">${escapeHtml(event.status)}</span></td>
+            <td>${escapeHtml(event.actor_type || "")} · ${escapeHtml(event.actor_id || "")}</td>
+            <td>${escapeHtml(event.reason || event.error || "")}</td>`;
+          rows.append(tr);
+        });
+      } catch (error) {
+        state.textContent = error.message || "The audit log could not be read.";
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      }[char]));
+    }
+  </script>
+</body>
+</html>

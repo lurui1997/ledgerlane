@@ -2,6 +2,8 @@
 
 Draft only. Do not submit this file for the entrant. Replace every `FILL:` before pasting into the form. Official rules: https://amazonappdev2026.devpost.com/rules (checked 2026-10-19). Deadline on that page: Friday, October 23, 2026, 12:00 pm Pacific Time.
 
+The demo video is recorded and has not been uploaded. The rules want a public YouTube or Vimeo link. Upload `ledgerlane_alexa_demo_final.mp4` yourself, then paste that URL here. Do not mark the video unlisted if the rules require public.
+
 All submission text must be English. This draft is English.
 
 ## Title

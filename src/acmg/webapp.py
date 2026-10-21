@@ -120,6 +120,10 @@ def create_app(settings: Settings | None = None) -> BearerGate:
     async def index() -> FileResponse:
         return FileResponse(str(STATIC_DIR.joinpath("index.html")))
 
+    @app.get("/audit")
+    async def audit_page() -> FileResponse:
+        return FileResponse(str(STATIC_DIR.joinpath("audit.html")))
+
     @app.get("/health")
     async def health(request: Request) -> dict:
         commerce = getattr(request.app.state, "commerce", None)

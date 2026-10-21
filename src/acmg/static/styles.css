@@ -19,7 +19,15 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-height: 100vh; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 button, input { font: inherit; color: inherit; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
@@ -65,7 +73,9 @@ main {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
   gap: 22px;
-  padding: 18px 7vw 40px;
+  padding: 8px 7vw 22px;
+  flex: 1;
+  min-height: 0;
 }
 
 .conversation, .ledger {
@@ -73,9 +83,11 @@ main {
   border: 1px solid var(--line);
   border-radius: 22px;
   box-shadow: var(--shadow);
+  min-height: 0;
+  overflow: hidden;
 }
-.conversation { padding: 18px; display: flex; flex-direction: column; min-height: 72vh; }
-.thread { display: flex; flex-direction: column; gap: 12px; overflow: auto; flex: 1; padding-right: 4px; }
+.conversation { padding: 18px; display: flex; flex-direction: column; }
+.thread { display: flex; flex-direction: column; gap: 12px; overflow: auto; flex: 1; min-height: 0; padding-right: 4px; }
 .bubble {
   max-width: 92%;
   padding: 12px 14px;
@@ -119,10 +131,10 @@ main {
 #composer button { background: var(--green); color: white; border-color: var(--green); padding-inline: 18px; }
 .error { color: var(--danger); min-height: 1.2em; }
 
-.ledger { padding: 18px 18px 8px; }
+.ledger { padding: 18px 18px 8px; display: flex; flex-direction: column; }
 .ledger h2 { font-family: Fraunces, Georgia, serif; margin: 0 0 4px; font-size: 28px; }
 .ledger header p { margin: 0 0 12px; color: var(--muted); }
-#ledger { list-style: none; margin: 0; padding: 0 0 12px; display: flex; flex-direction: column; gap: 8px; max-height: 68vh; overflow: auto; }
+#ledger { list-style: none; margin: 0; padding: 0 12px 12px 0; display: flex; flex-direction: column; gap: 8px; overflow: auto; flex: 1; min-height: 0; }
 #ledger li {
   border-top: 1px solid var(--line);
   padding-top: 8px;
@@ -136,8 +148,11 @@ main {
 .empty-ledger { color: var(--muted); }
 
 @media (max-width: 900px) {
-  main { grid-template-columns: 1fr; padding-inline: 16px; }
+  body { height: auto; overflow: auto; display: block; }
+  main { grid-template-columns: 1fr; padding-inline: 16px; height: auto; }
   .top { padding-inline: 16px; flex-direction: column; align-items: flex-start; }
   h1 { font-size: 34px; }
-  #ledger { max-height: none; }
+  .conversation, .ledger { overflow: visible; }
+  .thread { max-height: 62vh; }
+  #ledger { max-height: 48vh; }
 }
