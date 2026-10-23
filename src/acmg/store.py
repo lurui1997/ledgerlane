@@ -141,6 +141,9 @@ class MemoryStore:
         for item in items:
             self.products[item["sku"]]["stock"] -= item["qty"]
 
+    async def payments_with_key_fragment(self, fragment: str) -> list[dict[str, Any]]:
+        return [deepcopy(p) for p in self.payments.values() if fragment in (p.get("idempotency_key") or "")]
+
     async def release_reservation(self, quote_id: str, items: list[dict[str, Any]]) -> None:
         quote = self.quotes.get(quote_id)
         if quote and quote["status"] == "consumed":

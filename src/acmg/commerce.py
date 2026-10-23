@@ -299,7 +299,14 @@ class CommerceService:
                 raise StoreError("in_progress", "That order is already being placed. Wait rather than retrying it.")
             replay = dict(record["response"])
             replay["replayed"] = True
-            await self._tool_event(actor, "succeeded", {"idempotency_key": idempotency_key}, {"replayed": True})
+            replay["idempotency_key"] = idempotency_key
+            replay["charges"] = await self._charges_for_quote(quote_id)
+            await self._tool_event(
+                actor,
+                "succeeded",
+                {"idempotency_key": idempotency_key},
+                {"replayed": True, "order_id": replay.get("order_id"), "charges": replay["charges"]},
+            )
             return replay
 
         ctx = actor.context("place_order")
@@ -313,6 +320,8 @@ class CommerceService:
         )
         result = await self.engine.run(ctx, self._place_steps())
         response = self._present_place(result, ctx)
+        response["idempotency_key"] = idempotency_key
+        response["charges"] = await self._charges_for_quote(quote_id)
         await self.store.idempotency_finish(  # type: ignore[attr-defined]
             "place_order",
             idempotency_key,
@@ -444,6 +453,15 @@ class CommerceService:
                 }
             )
         return public
+
+    async def _charges_for_quote(self, quote_id: str) -> dict[str, int]:
+        """Count real payment rows for this quote: how many auths exist and how many are captured."""
+        rows = await self.store.payments_with_key_fragment(quote_id)  # type: ignore[attr-defined]
+        return {
+            "authorizations": len(rows),
+            "captured": sum(1 for row in rows if row.get("status") == "captured"),
+            "voided": sum(1 for row in rows if row.get("status") == "voided"),
+        }
 
     def _place_steps(self) -> list[SagaStep]:
         return [

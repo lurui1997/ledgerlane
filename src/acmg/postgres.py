@@ -348,6 +348,13 @@ class PostgresStore:
             row = await conn.fetchrow("SELECT * FROM payments WHERE capture_id = $1", capture_id)
         return _payment(row) if row else None
 
+    async def payments_with_key_fragment(self, fragment: str) -> list[dict[str, Any]]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM payments WHERE strpos(idempotency_key, $1) > 0 ORDER BY created_at", fragment
+            )
+        return [_payment(row) for row in rows]
+
     async def get_payment_by_idempotency(self, key: str) -> dict[str, Any] | None:
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM payments WHERE idempotency_key = $1", key)

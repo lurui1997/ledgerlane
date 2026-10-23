@@ -133,6 +133,19 @@ PRODUCTS: list[dict[str, Any]] = [
         "attributes": {"liters": 35},
         "synonyms": "bag duffel weekend bag",
     },
+    {
+        "sku": "HL-B-C6C7",
+        "name": "Harbor Lights · 2 seats, Hall B, C6–C7",
+        "brand": "Harbor Lights",
+        "category": "tickets",
+        "description": "Two adjacent seats for tonight's Harbor Lights concert, Hall B, row C, seats 6 and 7. $74 each, sold as a pair.",
+        "price_cents": 14800,
+        "currency": "USD",
+        "stock": 1,
+        "rating": 4.8,
+        "attributes": {"hall": "B", "seats": ["C6", "C7"], "per_seat_cents": 7400, "date": "tonight"},
+        "synonyms": "harbor lights concert seats tickets two seats tonight hall b",
+    },
 ]
 
 FREE_SHIPPING_OVER_CENTS = 7500

@@ -42,9 +42,12 @@ class MockLLM:
         if "capture fail" in lowered or "card capture fail" in lowered:
             shop["fail_capture"] = True
         if re.search(r"\bstart over\b|\bforget that\b", lowered):
-            for key in ("products", "cart_id", "quote_id", "order_id", "awaiting", "fail_capture"):
+            for key in ("products", "cart_id", "quote_id", "order_id", "awaiting", "fail_capture", "seats", "place_attempt", "last_place_args"):
                 shop.pop(key, None)
             return Decision("Cleared. Tell me what you want to find.")
+        seats = self._seats_turn(text, lowered, shop)
+        if seats is not None:
+            return seats
         if re.search(r"what can you do|help|capabilities", lowered):
             return Decision(
                 "I can find something in the catalog, compare a couple of options, add one to a cart, "
@@ -140,6 +143,51 @@ class MockLLM:
             return self._call("search_catalog", args)
         return Decision("Try asking me to find trail running shoes under 120 dollars.")
 
+    def _seats_turn(self, text: str, lowered: str, shop: dict[str, Any]) -> Decision | None:
+        """Concert-seat flow. Seats are a catalog SKU, so holding them is the saga's reserve_inventory step."""
+        if re.search(r"\bseats?\b|harbor lights", lowered) and not re.search(r"\bbook\b|\bsame\b", lowered):
+            shop["seats"] = True
+            return self._call(
+                "search_catalog",
+                {"query": "harbor lights seats", "limit": 3, "reason": f"Shopper asked: {text[:180]}"},
+            )
+        if not shop.get("seats"):
+            return None
+        if re.search(r"\b(send|resend)\b.*\bsame\b|\bsame (booking )?request\b", lowered):
+            last = shop.get("last_place_args")
+            if not last:
+                return Decision("There isn't an earlier booking request to resend.")
+            # Byte-for-byte the previous request, including its idempotency key.
+            args = dict(last)
+            args["reason"] = "Shopper resent the identical booking request; same idempotency key."
+            return self._call("place_order", args)
+        if re.search(r"\byes\b.*\bbook\b|\bconfirm\b", lowered):
+            if not shop.get("quote_id"):
+                return Decision("I don't have a checkout for the seats yet. Say book them first.")
+            fail = "capture fail" in lowered
+            attempt = shop.get("place_attempt", 0)
+            key = f"place:{shop['session_id']}:{shop['quote_id']}" + (f":retry{attempt}" if attempt else "")
+            args = {
+                "quote_id": shop["quote_id"],
+                "confirm": True,
+                "idempotency_key": key,
+                "payment_method": "mock_card",
+                "simulate_failure": "capture_payment" if fail else None,
+                "reason": "Shopper explicitly confirmed the quoted total for the seats.",
+            }
+            shop["last_place_args"] = dict(args)
+            return self._call("place_order", args)
+        if re.search(r"\bbook\b|check ?out", lowered):
+            if shop.get("cart_id"):
+                return self._call("prepare_checkout", {"cart_id": shop["cart_id"], "reason": "Shopper asked to book the seats."})
+            products = shop.get("products") or []
+            sku = next((p["sku"] for p in products if p.get("category") == "tickets"), products[0]["sku"] if products else None)
+            if not sku:
+                return Decision("Ask for the seats first.")
+            shop["checkout_after_add"] = True
+            return self._call("add_to_cart", {"sku": sku, "qty": 1, "reason": "Shopper asked to book the two seats."})
+        return None
+
     def _after_tool(self, message: dict[str, Any], shop: dict[str, Any]) -> Decision:
         payload = _payload(message.get("content") or "")
         name = message.get("name") or shop.get("last_tool")
@@ -151,11 +199,15 @@ class MockLLM:
             return Decision(payload.get("message") or "Here's the comparison.")
         if name == "add_to_cart":
             shop["cart_id"] = payload.get("cart_id")
+            if shop.pop("checkout_after_add", False) and shop["cart_id"]:
+                return self._call("prepare_checkout", {"cart_id": shop["cart_id"], "reason": "Seats held in cart; price them before any charge."})
             return Decision(payload.get("message") or "Added to the cart.")
         if name == "prepare_checkout":
             shop["quote_id"] = payload.get("quote_id")
             shop["awaiting"] = "place"
             return Decision(payload.get("message") or "Here is the total. Shall I place it?")
+        if name == "place_order" and shop.get("seats"):
+            return Decision(_seats_place_message(payload, shop))
         if name == "place_order":
             if payload.get("order_id") and payload.get("status") == "confirmed":
                 shop["order_id"] = payload["order_id"]
@@ -263,3 +315,32 @@ def _payload(content: str) -> dict[str, Any]:
     except json.JSONDecodeError:
         return {"message": content}
     return parsed if isinstance(parsed, dict) else {"message": content}
+
+
+def _seats_place_message(payload: dict[str, Any], shop: dict[str, Any]) -> str:
+    """Spoken reply built only from the tool result: saga steps, replay flag, and payment row counts."""
+    charges = payload.get("charges") or {}
+    captured = charges.get("captured")
+    if payload.get("replayed"):
+        return (
+            f"Same request key, so the gateway replayed the first result instead of running checkout again: "
+            f"order {payload.get('order_id')} is {payload.get('status')}. No new authorization or capture. "
+            f"Charges on this checkout: {captured}."
+        )
+    if payload.get("status") == "confirmed":
+        shop["order_id"] = payload.get("order_id")
+        shop["awaiting"] = None
+        return (
+            f"Booked. Order {payload.get('order_id')} for {payload.get('total')}, seats C6\u2013C7 in Hall B. "
+            f"Charges on this checkout: {captured}."
+        )
+    steps = (payload.get("saga") or {}).get("steps") or []
+    failed = next((s["name"] for s in steps if s.get("status") == "failed"), None)
+    undone = [s["name"] for s in steps if s.get("status") == "compensated"]
+    shop["place_attempt"] = shop.get("place_attempt", 0) + 1
+    labels = {"create_order": "order cancelled", "authorize_payment": "authorization voided", "reserve_inventory": "seats C6\u2013C7 released"}
+    done = ", ".join(labels.get(n, n) for n in undone) or "nothing to undo"
+    return (
+        f"The card capture failed{' at ' + failed if failed else ''}, so I rolled back: {done}. "
+        f"Nothing was charged (captured payments: {captured})."
+    )

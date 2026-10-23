@@ -18,6 +18,20 @@ const suggestions = [
   "Where is my order?",
 ];
 
+// ?flow=seats swaps in the Harbor Lights concert-seat chips (same tools, same saga).
+const seatsFlow = new URLSearchParams(location.search).get("flow") === "seats";
+const seatSuggestions = [
+  "Two seats for Harbor Lights tonight",
+  "Book them",
+  "Yes, book them, but make the card capture fail",
+  "Yes, book them",
+  "Send the same booking request again",
+];
+if (seatsFlow) {
+  suggestions.splice(0, suggestions.length, ...seatSuggestions);
+  input.placeholder = "Two seats for Harbor Lights tonight";
+}
+
 const happyPath = [
   "Find trail running shoes under 120 dollars",
   "Compare the two cheapest",
@@ -136,6 +150,11 @@ function renderCards(article, trace) {
     if (result.quote_id) cards.append(receipt("Checkout", `${result.total} · quote ${result.quote_id}`));
     if (result.order_id && result.status) {
       cards.append(receipt(`Order ${result.order_id}`, `${result.status} · ${result.total || ""} ${result.tracking_number || ""}`.trim()));
+    }
+    if (step.tool === "place_order" && result.charges) {
+      const c = result.charges;
+      const title = result.replayed ? "Idempotent replay" : "Payment rows for this checkout";
+      cards.append(receipt(title, `key ${result.idempotency_key} · authorizations ${c.authorizations} · captured ${c.captured} · voided ${c.voided}`));
     }
     if (result.cart_id && result.items && !result.quote_id && !result.order_id) {
       const total = result.subtotal || result.total || "";
